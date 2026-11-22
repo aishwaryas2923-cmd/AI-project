@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Clinical Reports & Analytics{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Clinical Reports & Export</h1>
+        <p class="page-description">Automated queue statistics summary & patient roster data</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('download_csv') }}" class="btn btn-primary">
+            ⬇ Download nurse_queue.csv
+        </a>
+    </div>
+</div>
+
+<div class="charts-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 2rem;">
+    <!-- Structured Summary Card -->
+    <div class="chart-card">
+        <h3 class="chart-title">Administrative Metrics Overview</h3>
+        <table class="data-table" style="font-size: 0.9rem;">
+            <tbody>
+                <tr>
+                    <td><strong>Total Processed Visits</strong></td>
+                    <td style="text-align: right; font-weight: bold;">{{ metrics.total }}</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-see_now">See Now</span> Urgency</td>
+                    <td style="text-align: right; font-weight: bold; color: #dc2626;">{{ metrics.see_now }}</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-today">Today</span> Review</td>
+                    <td style="text-align: right; font-weight: bold; color: #d97706;">{{ metrics.today }}</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-routine">Routine</span> Appointments</td>
+                    <td style="text-align: right; font-weight: bold; color: #0284c7;">{{ metrics.routine }}</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-red-flag">Red-Flag Safety Alerts</span></td>
+                    <td style="text-align: right; font-weight: bold; color: #b91c1c;">{{ metrics.red_flag_count }}</td>
+                </tr>
+                <tr>
+                    <td>Data Issues Flagged</td>
+                    <td style="text-align: right; font-weight: bold; color: #64748b;">{{ metrics.issue_count }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Category Distribution Table -->
+    <div class="chart-card">
+        <h3 class="chart-title">Visits by Category Breakdown</h3>
+        <table class="data-table" style="font-size: 0.9rem;">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th style="text-align: right;">Count</th>
+                    <th style="text-align: right;">Share</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cat, cnt in metrics.category_distribution.items() %}
+                <tr>
+                    <td><span class="badge badge-category">{{ cat }}</span></td>
+                    <td style="text-align: right; font-weight: 600;">{{ cnt }}</td>
+                    <td style="text-align: right; color: var(--text-muted);">
+                        {% if metrics.total > 0 %}
+                            {{ ((cnt / metrics.total) * 100) | round(1) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Raw summary.txt Content Display -->
+<div class="table-card">
+    <div class="table-header-bar">
+        <h2 class="table-title">summary.txt File Preview</h2>
+        <span style="font-size: 0.8rem; color: var(--text-secondary);">Direct render of generated summary.txt</span>
+    </div>
+    <div style="padding: 1.25rem;">
+        <pre class="code-preview">{{ summary_content }}</pre>
+    </div>
+</div>
+{% endblock %}

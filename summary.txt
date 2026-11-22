@@ -1,0 +1,16 @@
+CLINIC VISIT SORTER - SUMMARY REPORT
+
+Total visits processed: 30
+
+Priority Breakdown:
+  - see_now: 10
+  - today: 17
+  - routine: 3
+
+Category Breakdown:
+  - allergy: 5
+  - fever_cold: 3
+  - injury: 5
+  - other: 8
+  - pain: 6
+  - stomach: 3

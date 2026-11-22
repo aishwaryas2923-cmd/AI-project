@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Register Student Visit{% endblock %}
+
+{% block content %}
+<div class="page-header" style="max-width: 650px; margin: 0 auto 1.5rem auto;">
+    <div>
+        <h1 class="page-title">Register Student Visit</h1>
+        <p class="page-description">Record a walk-in visit to automatically classify and add to the nurse queue</p>
+    </div>
+</div>
+
+<div class="form-card">
+    <form method="POST" action="{{ url_for('register') }}">
+        <div class="form-group">
+            <label for="student_id" class="form-label">Student / Visit ID</label>
+            <input 
+                type="text" 
+                id="student_id" 
+                name="student_id" 
+                class="form-control" 
+                placeholder="e.g. V31" 
+                required
+            >
+            <div class="form-help">Must be a unique identifier for this visit.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="visit_time" class="form-label">Arrival Time (24-Hour Format)</label>
+            <input 
+                type="text" 
+                id="visit_time" 
+                name="visit_time" 
+                class="form-control" 
+                placeholder="e.g. 12:45" 
+                pattern="^([01]\d|2[0-3]):([0-5]\d)$"
+                title="Format: HH:MM (24-hour clock)"
+                required
+            >
+            <div class="form-help">Format: HH:MM (e.g. 09:30 or 14:15).</div>
+        </div>
+
+        <div class="form-group">
+            <label for="note" class="form-label">Student Reported Note (Symptoms / Reason)</label>
+            <textarea 
+                id="note" 
+                name="note" 
+                class="form-control" 
+                rows="4" 
+                placeholder="Describe symptoms as reported by student (in English, Tamil, or Tanglish)..."
+            ></textarea>
+            <div class="form-help">
+                Red-flag terms (e.g. 'chest pain', 'fainted', 'nenju valikuthu') automatically elevate priority to <strong>see_now</strong>.
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+            <a href="{{ url_for('queue') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Process & Prioritize Visit</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

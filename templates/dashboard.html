@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Executive Clinical Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Executive Clinical Dashboard</h1>
+        <p class="page-description">Real-time triage queue metrics & patient flow analytics</p>
+    </div>
+    <div>
+        <a href="{{ url_for('queue') }}" class="btn btn-primary">
+            View Live Nurse Queue &rarr;
+        </a>
+    </div>
+</div>
+
+<!-- Dynamic Statistics Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <span>Total Visits</span>
+            <span>👥</span>
+        </div>
+        <div class="stat-value">{{ metrics.total }}</div>
+        <div class="stat-footer">Loaded dynamically from visits.csv</div>
+    </div>
+
+    <div class="stat-card card-see-now">
+        <div class="stat-header">
+            <span>See Now</span>
+            <span class="badge badge-see_now">Urgent</span>
+        </div>
+        <div class="stat-value">{{ metrics.see_now }}</div>
+        <div class="stat-footer">Immediate clinical attention</div>
+    </div>
+
+    <div class="stat-card card-today">
+        <div class="stat-header">
+            <span>Today</span>
+            <span class="badge badge-today">Priority 2</span>
+        </div>
+        <div class="stat-value">{{ metrics.today }}</div>
+        <div class="stat-footer">Review before day close</div>
+    </div>
+
+    <div class="stat-card card-routine">
+        <div class="stat-header">
+            <span>Routine</span>
+            <span class="badge badge-routine">Standard</span>
+        </div>
+        <div class="stat-value">{{ metrics.routine }}</div>
+        <div class="stat-footer">Non-urgent medical requests</div>
+    </div>
+
+    <div class="stat-card card-red-flag">
+        <div class="stat-header">
+            <span>Red-Flag Alerts</span>
+            <span class="badge badge-red-flag">SAFETY</span>
+        </div>
+        <div class="stat-value" style="color: #b91c1c;">{{ metrics.red_flag_count }}</div>
+        <div class="stat-footer">Bypassed AI to see_now</div>
+    </div>
+</div>
+
+<!-- Visualizations Grid -->
+<div class="charts-grid">
+    <!-- Priority Distribution Chart -->
+    <div class="chart-card">
+        <h3 class="chart-title">Priority Breakdown</h3>
+        <div class="chart-wrapper">
+            <canvas id="priorityChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Category Distribution Chart -->
+    <div class="chart-card">
+        <h3 class="chart-title">Symptom Categories</h3>
+        <div class="chart-wrapper">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Hourly Trend Chart -->
+    <div class="chart-card">
+        <h3 class="chart-title">Visits by Arrival Hour</h3>
+        <div class="chart-wrapper">
+            <canvas id="hourlyChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- High Priority Quick Overview Table -->
+<div class="table-card">
+    <div class="table-header-bar">
+        <h2 class="table-title">Immediate Attention Queue (See Now & Red-Flags)</h2>
+        <a href="{{ url_for('queue') }}" class="btn btn-secondary">Full Nurse Queue ({{ metrics.total }})</a>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Time</th>
+                    <th>Priority</th>
+                    <th>Category</th>
+                    <th>Red Flag</th>
+                    <th>AI Summary</th>
+                    <th>Original Student Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set urgent_records = records | selectattr('priority', 'equalto', 'see_now') | list %}
+                {% if urgent_records %}
+                    {% for r in urgent_records %}
+                    <tr class="{% if r.red_flag == 'True' %}row-red-flag{% endif %}">
+                        <td><strong>{{ r.id }}</strong></td>
+                        <td>{{ r.time }}</td>
+                        <td><span class="badge badge-see_now">SEE NOW</span></td>
+                        <td><span class="badge badge-category">{{ r.category }}</span></td>
+                        <td>
+                            {% if r.red_flag == 'True' %}
+                                <span class="badge badge-red-flag">RED FLAG</span>
+                            {% else %}
+                                <span style="color: var(--text-muted); font-size: 0.8rem;">No</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ r.summary }}</td>
+                        <td style="max-width: 300px; color: var(--text-secondary);">{{ r.note }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                            No pending 'See Now' visits at this time.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Priority Distribution Chart
+    const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+    new Chart(priorityCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['See Now', 'Today', 'Routine'],
+            datasets: [{
+                data: [
+                    {{ metrics.see_now }},
+                    {{ metrics.today }},
+                    {{ metrics.routine }}
+                ],
+                backgroundColor: ['#ef4444', '#f59e0b', '#0284c7'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // Category Distribution Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryLabels = {{ metrics.category_distribution.keys() | list | tojson }};
+    const categoryCounts = {{ metrics.category_distribution.values() | list | tojson }};
+    new Chart(categoryCtx, {
+        type: 'pie',
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                data: categoryCounts,
+                backgroundColor: [
+                    '#3b82f6', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#64748b'
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // Hourly Distribution Chart
+    const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+    const hourlyLabels = {{ metrics.hourly_distribution.keys() | list | tojson }};
+    const hourlyCounts = {{ metrics.hourly_distribution.values() | list | tojson }};
+    new Chart(hourlyCtx, {
+        type: 'bar',
+        data: {
+            labels: hourlyLabels,
+            datasets: [{
+                label: 'Student Visits',
+                data: hourlyCounts,
+                backgroundColor: '#0d9488',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
+{% endblock %}

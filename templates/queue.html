@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Nurse Queue Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Nurse Patient Queue</h1>
+        <p class="page-description">Organized by clinical urgency (See Now &rarr; Today &rarr; Routine) and arrival time</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('download_csv') }}" class="btn btn-secondary">
+            ⬇ Export CSV
+        </a>
+        <a href="{{ url_for('register') }}" class="btn btn-primary">
+            + New Visit
+        </a>
+    </div>
+</div>
+
+<div class="table-card">
+    <!-- Filter and Search Controls -->
+    <div class="table-header-bar">
+        <div style="font-weight: 600; font-size: 0.95rem; color: var(--primary);">
+            Showing {{ records | length }} of {{ total_records }} Student Visits
+        </div>
+
+        <form method="GET" action="{{ url_for('queue') }}" class="filter-bar">
+            <!-- Search ID or Keyword -->
+            <input 
+                type="text" 
+                name="search" 
+                placeholder="Search ID (e.g. V05) or note..." 
+                value="{{ search_query }}"
+                class="input-search"
+            >
+
+            <!-- Priority Filter -->
+            <select name="priority" class="select-filter" onchange="this.form.submit()">
+                <option value="all" {% if selected_priority == 'all' or not selected_priority %}selected{% endif %}>All Priorities</option>
+                <option value="see_now" {% if selected_priority == 'see_now' %}selected{% endif %}>See Now</option>
+                <option value="today" {% if selected_priority == 'today' %}selected{% endif %}>Today</option>
+                <option value="routine" {% if selected_priority == 'routine' %}selected{% endif %}>Routine</option>
+            </select>
+
+            <!-- Category Filter -->
+            <select name="category" class="select-filter" onchange="this.form.submit()">
+                <option value="all" {% if selected_category == 'all' or not selected_category %}selected{% endif %}>All Categories</option>
+                <option value="injury" {% if selected_category == 'injury' %}selected{% endif %}>Injury</option>
+                <option value="fever_cold" {% if selected_category == 'fever_cold' %}selected{% endif %}>Fever / Cold</option>
+                <option value="stomach" {% if selected_category == 'stomach' %}selected{% endif %}>Stomach</option>
+                <option value="pain" {% if selected_category == 'pain' %}selected{% endif %}>Pain</option>
+                <option value="allergy" {% if selected_category == 'allergy' %}selected{% endif %}>Allergy</option>
+                <option value="other" {% if selected_category == 'other' %}selected{% endif %}>Other</option>
+            </select>
+
+            <button type="submit" class="btn btn-primary" style="padding: 0.45rem 0.8rem; font-size: 0.85rem;">
+                Filter
+            </button>
+            {% if search_query or (selected_priority and selected_priority != 'all') or (selected_category and selected_category != 'all') %}
+                <a href="{{ url_for('queue') }}" class="btn btn-secondary" style="padding: 0.45rem 0.8rem; font-size: 0.85rem;">
+                    Reset
+                </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Responsive Table -->
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Queue #</th>
+                    <th style="width: 90px;">Student ID</th>
+                    <th style="width: 80px;">Arrival</th>
+                    <th style="width: 110px;">Priority</th>
+                    <th style="width: 110px;">Category</th>
+                    <th style="width: 100px;">Red Flag</th>
+                    <th style="width: 250px;">AI Summary (Symptom Only)</th>
+                    <th>Original Student Note (Full)</th>
+                    <th style="width: 100px;">Data Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if records %}
+                    {% for r in records %}
+                    <tr class="{% if r.red_flag == 'True' %}row-red-flag{% endif %}">
+                        <td style="color: var(--text-muted); font-weight: 600;">
+                            #{{ loop.index }}
+                        </td>
+                        <td>
+                            <strong>{{ r.id }}</strong>
+                        </td>
+                        <td>
+                            {{ r.time }}
+                        </td>
+                        <td>
+                            {% if r.priority == 'see_now' %}
+                                <span class="badge badge-see_now">SEE NOW</span>
+                            {% elif r.priority == 'today' %}
+                                <span class="badge badge-today">TODAY</span>
+                            {% else %}
+                                <span class="badge badge-routine">ROUTINE</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-category">{{ r.category }}</span>
+                        </td>
+                        <td>
+                            {% if r.red_flag == 'True' %}
+                                <span class="badge badge-red-flag">RED FLAG</span>
+                            {% else %}
+                                <span style="color: var(--text-muted); font-size: 0.8rem;">No</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 0.85rem; font-weight: 500;">
+                            {{ r.summary }}
+                        </td>
+                        <td style="color: var(--text-secondary); max-width: 320px; word-break: break-word;">
+                            {{ r.note if r.note else '<em style="color:#ef4444;">(Empty note reported)</em>' | safe }}
+                        </td>
+                        <td>
+                            {% if r.data_issue %}
+                                <span class="badge badge-issue" title="Data validation flags: {{ r.data_issue }}">
+                                    ⚠️ {{ r.data_issue }}
+                                </span>
+                            {% else %}
+                                <span style="color: #22c55e; font-size: 0.8rem;">✓ Valid</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                            No visit records match the selected filter criteria.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

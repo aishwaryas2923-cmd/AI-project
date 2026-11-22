@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Clinic Visit Sorter{% endblock %} - Campus Health System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <span class="cross-icon">+</span>
+                <div class="brand-text">
+                    <span class="brand-title">Clinic Visit Sorter</span>
+                    <span class="brand-subtitle">CIT AI-Native Health Administration</span>
+                </div>
+            </div>
+
+            <nav class="nav-links">
+                <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    Dashboard
+                </a>
+                <a href="{{ url_for('queue') }}" class="nav-link {% if request.endpoint == 'queue' %}active{% endif %}">
+                    Nurse Queue
+                </a>
+                <a href="{{ url_for('register') }}" class="nav-link {% if request.endpoint == 'register' %}active{% endif %}">
+                    Register Visit
+                </a>
+                <a href="{{ url_for('reports') }}" class="nav-link {% if request.endpoint == 'reports' %}active{% endif %}">
+                    Reports
+                </a>
+                <a href="{{ url_for('about') }}" class="nav-link {% if request.endpoint == 'about' %}active{% endif %}">
+                    About Project
+                </a>
+            </nav>
+
+            <div class="header-status">
+                {% if api_status.configured %}
+                    <span class="badge badge-success" title="{{ api_status.message }}">
+                        <span class="status-dot online"></span> {{ api_status.provider }} ({{ api_status.model }})
+                    </span>
+                {% else %}
+                    <span class="badge badge-warning" title="{{ api_status.message }}">
+                        <span class="status-dot offline"></span> Fallback Mode (Rule-based)
+                    </span>
+                {% endif %}
+                <a href="{{ url_for('force_refresh') }}" class="btn-refresh" title="Re-sync data from visits.csv">
+                    ↻ Sync
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="flash-alert flash-{{ category }}">
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="app-footer">
+        <div class="footer-container">
+            <p><strong>Disclaimer:</strong> This is an academic queue prioritization assistant. It does not provide medical diagnoses. A qualified nurse reviews every case and makes all clinical decisions.</p>
+            <p>&copy; 2026 Campus Health Care System · AI-Native Engineering</p>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

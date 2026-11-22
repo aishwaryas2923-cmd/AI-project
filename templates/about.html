@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}About Project & Viva Guide{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">About Clinic Visit Sorter</h1>
+        <p class="page-description">Architecture, Safety Safeguards & College Project Viva Guide</p>
+    </div>
+</div>
+
+<div class="table-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.25rem; color: var(--primary); margin-bottom: 0.75rem;">1. Project Overview & Scope</h2>
+    <p style="margin-bottom: 0.75rem;">
+        <strong>Clinic Visit Sorter</strong> is an AI-assisted health administration and queue triage application designed for college clinics. It reads student-reported symptoms written in informal English, Tamil, and Tanglish, classifies them using AI with strict JSON schemas, applies clinical safety override rules, and organizes patients into an actionable nurse queue.
+    </p>
+    <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1rem;">
+        <strong>Crucial Safety Principle:</strong> The system is designed to organize the queue only. It <em>never diagnoses diseases, never prescribes medications, and never removes any student from the queue</em>. A human nurse makes all medical decisions.
+    </div>
+</div>
+
+<div class="table-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.25rem; color: var(--primary); margin-bottom: 0.75rem;">2. Core Safety Safeguards</h2>
+    <ul style="padding-left: 1.25rem; line-height: 1.8;">
+        <li><strong>Deterministic Red-Flag Detection:</strong> Regex/substring checks in Python catch high-risk phrases (e.g. <em>"chest pain", "fainted", "moochu vida mudiyala", "nenju valikuthu"</em>) and immediately assign <code>see_now</code>. The AI is forbidden from lowering this.</li>
+        <li><strong>Dizziness & Nosebleed Guard:</strong> Notes mentioning dizziness or nosebleeds must receive at least <code>today</code> and can never be marked <code>routine</code>.</li>
+        <li><strong>Missing / Short Notes:</strong> Notes under 3 characters or empty notes default to <code>today</code> to ensure nurse verification.</li>
+        <li><strong>Strict No-Diagnosis Enforcement:</strong> Summaries are limited to 12 words of reported symptoms only. If the AI attempts to guess a disease (e.g., dengue, typhoid) or speculative words (likely, suspected), Python sanitizes it to <em>"Symptoms reported, nurse to assess"</em>.</li>
+        <li><strong>Fault-Tolerant Fallback:</strong> If the API fails or is unconfigured, the app falls back safely without crashing: <code>category=other</code>, <code>priority=today</code>, summary=<code>"Could not classify, nurse to review"</code>.</li>
+    </ul>
+</div>
+
+<div class="table-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.25rem; color: var(--primary); margin-bottom: 1rem;">3. College Viva Examination Questions & Answers</h2>
+    
+    <div style="margin-bottom: 1.25rem;">
+        <h3 style="font-size: 1rem; color: var(--accent); margin-bottom: 0.25rem;">Q1: Why is an LLM used here instead of simple keyword matching?</h3>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+            <strong>Answer:</strong> Students report health complaints informally with typos, colloquialisms, and code-mixed Tanglish (e.g., <em>"lab la chemical vilunthu finger itching aguthu"</em>). LLMs excel at semantic understanding and summarization without needing exhaustive rule lists for every typo. However, for critical red-flag symptoms, deterministic rule-based checks act as a safety net.
+        </p>
+    </div>
+
+    <div style="margin-bottom: 1.25rem;">
+        <h3 style="font-size: 1rem; color: var(--accent); margin-bottom: 0.25rem;">Q2: Why is a priority that is too high better than a priority that is too low?</h3>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+            <strong>Answer:</strong> A priority that is too high (false positive) costs the nurse only a few extra minutes of attention. A priority that is too low (false negative) could leave a student suffering from acute chest pain or anaphylaxis waiting behind administrative requests, leading to severe clinical risk. Thus, when uncertain, the system always elevates priority.
+        </p>
+    </div>
+
+    <div style="margin-bottom: 1.25rem;">
+        <h3 style="font-size: 1rem; color: var(--accent); margin-bottom: 0.25rem;">Q3: How does the application prevent hallucinations or disease guessing?</h3>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+            <strong>Answer:</strong> We enforce three layers: (1) System prompt instructions forbidding diagnosis; (2) JSON Schema validation restricting outputs; (3) Post-processing Python sanitation that scans for forbidden medical diagnosis terms and speculation words, replacing them with neutral symptom descriptions.
+        </p>
+    </div>
+
+    <div style="margin-bottom: 1.25rem;">
+        <h3 style="font-size: 1rem; color: var(--accent); margin-bottom: 0.25rem;">Q4: What happens if the API key is missing or the network disconnects?</h3>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+            <strong>Answer:</strong> The app implements graceful degradation. It never crashes. A missing API key or timeout activates the fallback classification (<code>category=other</code>, <code>priority=today</code>), while the local Python red-flag module continues detecting emergency phrases and assigning <code>see_now</code>.
+        </p>
+    </div>
+
+    <div>
+        <h3 style="font-size: 1rem; color: var(--accent); margin-bottom: 0.25rem;">Q5: How is sorting executed?</h3>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+            <strong>Answer:</strong> Multi-level stable sorting: primary key is urgency rank (<code>see_now</code> = 0, <code>today</code> = 1, <code>routine</code> = 2), and secondary key is parsed arrival timestamp (HH:MM). This ensures fair, first-come-first-served order within urgency tiers.
+        </p>
+    </div>
+</div>
+{% endblock %}
